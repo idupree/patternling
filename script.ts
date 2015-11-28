@@ -1,10 +1,18 @@
-(function(){
-"use strict";
+//(function(){
+//"use strict";
+
+// My vim doesn't know about typescript:
+// vim: filetype=javascript
 
 // https://github.com/basarat/typescript-collections
 /// <reference path="collections.ts" />
 
-window.trains = {};
+module TrainWorldII {
+
+//type Dict = collections.Dictionary;
+
+//window.trains = {};
+//export var trains = {};
 
 // maths order
 enum Dir {E, NE, N, NW, W, SW, S, SE};
@@ -20,30 +28,28 @@ interface Location {
 function offset(x:number, y:number): Offset { return {x: x, y: y}; }
 function locatio(x:number, y:number): Location { return {x: x, y: y}; }
 
-var dirOffsets: Dictionary<Dir, Offset> = new collections.Dictionary<Dir, Offset>();
-var offsetDirs: Dictionary<Offset, Dir> = new collections.Dictionary<Offset, Dir>();
+var dirOffsets: collections.Dictionary<Dir, Offset> = new collections.Dictionary<Dir, Offset>();
+var offsetDirs: collections.Dictionary<Offset, Dir> = new collections.Dictionary<Offset, Dir>();
 [
-[E, offset(1,0)],
-[NE, offset(1,1)],
-[N, offset(0,1)],
-[NW, offset(-1,1)],
-[W, offset(-1,0)],
-[SW, offset(-1,-1)],
-[S, offset(0,-1)],
-[SE, offset(1,-1)]
-].forEach(function(d_o) {
-  var dir = d_o[0];
-  var offset = d_o[1];
-  dirOffsets.setValue(dir, offset);
-  offsetDirs.setValue(offset, dir);
-};
+{dir: Dir.E, offset: offset(1,0)},
+{dir: Dir.NE, offset: offset(1,1)},
+{dir: Dir.N, offset: offset(0,1)},
+{dir: Dir.NW, offset: offset(-1,1)},
+{dir: Dir.W, offset: offset(-1,0)},
+{dir: Dir.SW, offset: offset(-1,-1)},
+{dir: Dir.S, offset: offset(0,-1)},
+{dir: Dir.SE, offset: offset(1,-1)},
+].forEach(function(v) {
+  dirOffsets.setValue(v.dir, v.offset);
+  offsetDirs.setValue(v.offset, v.dir);
+});
 
 function oppositeOffset(off:Offset):Offset {
   return offset(-off.x, -off.y);
 }
 
 function oppositeDir(dir:Dir):Dir {
-  return offsetDirs(oppositeOffset(dirOffsets(dir)));
+  return offsetDirs.getValue(oppositeOffset(dirOffsets.getValue(dir)));
 }
 
 
@@ -94,9 +100,10 @@ interface Tile {
 }
 
 // TODO is there a min/max x or y or anything?
-type WorldMap = Dictionary<Location, Tile>;
+type WorldMap = collections.Dictionary<Location, Tile>;
 
-trains.map = new WorldMap();
+//trains.map = new WorldMap();
+var trains_map:WorldMap = new collections.Dictionary<Location, Tile>();
 
 // TODO do i want to draw with svg? canvas? dom elements? d3.js?
 // svg/dom means I can use css animation.
@@ -108,5 +115,23 @@ function trainToCss(oldLoc:Location, newLoc:Location, trainCar:TrainCar) {
 //_.each(trains.
 
 
+// TODO what about different train speeds?? That kind of interferes
+// with train cars having a single location. Really they need a location
+// between tiles. Like base time and velocity from srctile to dsttile
+// and update when it gets to a new tile because we need to anyway
+// And acceleration, I guess, why not.
+//
 
-}());
+// How does braking work
+// What about the safety systems
+// (Jackie will be able to tell me how they work)
+// (And: a 3D view will be quite feasible probably.
+//  At least an awful one with css 3d transforms,
+//   maybe something better with webgl or three.js)
+// (What about elevation?)
+
+
+
+}
+
+//}());
