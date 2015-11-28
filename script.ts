@@ -21,10 +21,19 @@ interface Offset {
   x: number;
   y: number;
 };
+interface NormalizedOffset {
+  // x^2+y^2 approximately = 1
+  x: number;
+  y: number;
+};
 interface Location {
   x: number;
   y: number;
 };
+//toString?
+/*function xyToString(xy: Offset): string {
+  return 
+}*/
 function offset(x:number, y:number): Offset { return {x: x, y: y}; }
 function locatio(x:number, y:number): Location { return {x: x, y: y}; }
 
@@ -43,6 +52,7 @@ var offsetDirs: collections.Dictionary<Offset, Dir> = new collections.Dictionary
   dirOffsets.setValue(v.dir, v.offset);
   offsetDirs.setValue(v.offset, v.dir);
 });
+type CardinalDir = Dir;
 
 function oppositeOffset(off:Offset):Offset {
   return offset(-off.x, -off.y);
@@ -51,6 +61,168 @@ function oppositeOffset(off:Offset):Offset {
 function oppositeDir(dir:Dir):Dir {
   return offsetDirs.getValue(oppositeOffset(dirOffsets.getValue(dir)));
 }
+
+enum Parity { A = 0, B = 1 };
+
+type ID = number; // could be uuid?
+interface TrackEnd {
+  id: ID;
+  // this loc/dir could be 3D
+  location: Location;
+  // direction of end A
+  direction: NormalizedOffset;
+  ends: [Switch, Switch];
+//  a: Switch;
+//  b: Switch;
+}
+// create the bezier based on assumietAttribute("d",g the curve is <180deg, i guess, to choose ends
+interface Track {
+  id: ID;
+  ends: [Switch, Switch];
+//  a: Switch;
+//  b: Switch;
+}
+interface Switch {
+  id: ID;
+  trackEnd: TrackEnd;
+  //whichSideOfTrackEnd: Parity;
+  // ^ that can be checked by identity based equality comparison
+  tracks: {[id: number]: Track};
+  switchPosition: ID; // track id
+//  tracks: Track[];
+//  switchPosition: number; // index into tracks array. can it be null if in a bad position?
+}
+// ugh i wish i had an in-memory relational database instead of keeping
+// track of all this by hand:
+interface TrackWorld {
+  autoIncrement: number;
+  trackEnds: {[id: number]: TrackEnd};
+  tracks: {[id: number]: Track};
+  switches: {[id: number]: Switch};
+}
+//var trackWorld = new TrackWorld();
+var trackWorld: TrackWorld = {
+  autoIncrement: 0,
+  trackEnds: {},
+  tracks: {},
+  switches: {}
+};
+// TODO look up whether one already exists and reuse that??
+function createTrackEnd(l: Location, d: NormalizedOffset): TrackEnd {
+  var trackEnd = {
+    id: trackWorld.autoIncrement++,
+    location: l,
+    direction: d,
+    ends: null
+  };
+  trackEnd.ends = [
+    { id: trackWorld.autoIncrement++, trackEnd: trackEnd, tracks: [], switchPosition: null },
+    { id: trackWorld.autoIncrement++, trackEnd: trackEnd, tracks: [], switchPosition: null },
+  ];
+  trackWorld.trackEnds[trackEnd.id] = trackEnd;
+  trackWorld.switches[trackEnd.ends[Parity.A].id] = trackEnd.ends[Parity.A];
+  trackWorld.switches[trackEnd.ends[Parity.B].id] = trackEnd.ends[Parity.B];
+  return trackEnd;
+}
+function createTrack(ends: [Switch, Switch]) {
+  var track = {
+    id: trackWorld.autoIncrement++,
+    ends: ends
+  };
+  trackWorld.tracks[track.id] = track;
+  return track;
+}
+function trackEndIsUnused(trackEnd: TrackEnd): boolean {
+  return (
+    Object.keys(trackEnd.ends[Parity.A].tracks).length === 0 &&
+    Object.keys(trackEnd.ends[Parity.B].tracks).length === 0);
+}
+function deleteTrackEnd(trackEnd: TrackEnd) {
+  console.assert(trackEndIsUnused(trackEnd));
+  delete trackWorld.switches[trackEnd.ends[Parity.A].id];
+  delete trackWorld.switches[trackEnd.ends[Parity.B].id];
+  delete trackWorld.trackEnds[trackEnd.id];
+}
+function deleteTrack(t: Track, deleteUnusedTrackEnds = true) {
+  for(var s of t.ends) {
+    delete s.tracks[t.id];
+    if(s.switchPosition === t.id) {
+      // TODO is this my fav algorithm?
+      // Is it even "safe" to automatically connect to a new route?
+      // (In terms of trains now crashing into each other. Although
+      // there's also no protection against deleting a track a train
+      // is on, also TODO.)
+      // Should it behave differently depending whether there's only one
+      // alt left?
+      var alts = Object.keys(s.tracks);
+      if(alts.length === 0) {
+        s.switchPosition = null;
+      } else {
+        s.switchPosition = +alts[0];
+      }
+    }
+    if(trackEndIsUnused(s.trackEnd)) {
+      deleteTrackEnd(s.trackEnd);
+    }
+  }
+  delete trackWorld.tracks[t.id];
+}
+
+// returns cardinaldir?. undefined and null apparently go in any type.
+function cardinalDirOfTrackEnd(end: TrackEnd): CardinalDir {
+  return offsetDirs.getValue(end.direction);
+}
+function cardinalDirsOfTrack(t: Track): [CardinalDir, CardinalDir] {
+  // TODO normalize to the correct opposite for this track
+  return [
+    cardinalDirOfTrackEnd(t.ends[Parity.A].trackEnd),
+    cardinalDirOfTrackEnd(t.ends[Parity.B].trackEnd)];
+}
+function switchIsJustOneTrack(s:Switch):boolean {
+  return Object.keys(s.tracks).length === 1;
+}
+function switchTrack(s:Switch):Track {
+  return s.tracks[s.switchPosition];
+}
+function implicitOtherTracksOverlappingThisOneWithFrogs(t:Track): Track[] {
+  // TODO implement if needed
+  return [];
+}
+function switchDirection(s:Switch): NormalizedOffset {
+  if(s.trackEnd.ends[Parity.A] === s) {
+    return s.trackEnd.direction;
+  } else {
+    return oppositeOffset(s.trackEnd.direction);
+  }
+}
+
+function svgXYdString(xy:Offset): string {
+  return `${xy.x} ${xy.y}`;
+}
+// TODO make it not be a monorail
+// two curves
+// ties
+function trackToSvg(t:Track): Element {
+  //var offsets:[Offset, Offset] = _.map(t.ends, switchDirection);
+//  var aoff = t.a.direction
+// can return a group <g>
+  var d = `
+M ${svgXYdString(t.ends[Parity.A].trackEnd.location)} C
+${svgXYdString(switchDirection(t.ends[Parity.A]))}
+${svgXYdString(switchDirection(t.ends[Parity.B]))}
+${svgXYdString(t.ends[Parity.B].trackEnd.location)}
+`;
+  var path = document.createElementNS("http://www.w3.org/2000/svg", 'path');
+  path.setAttribute("d", d);
+  return path;
+}
+
+// No frogs yet, besides cheaty crossing
+//interface Frog {
+//  CrossedTracks:
+//}
+
+// no traincars yet
 
 
 interface TrackUnit {
