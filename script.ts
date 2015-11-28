@@ -15,30 +15,30 @@ module TrainWorldII {
 //export var trains = {};
 
 // maths order
-enum Dir {E, NE, N, NW, W, SW, S, SE};
+export enum Dir {E, NE, N, NW, W, SW, S, SE};
 
-interface Offset {
+export interface Offset {
   x: number;
   y: number;
-};
-interface NormalizedOffset {
+}
+export interface NormalizedOffset {
   // x^2+y^2 approximately = 1
   x: number;
   y: number;
-};
-interface Location {
+}
+export interface Location {
   x: number;
   y: number;
-};
+}
 //toString?
 /*function xyToString(xy: Offset): string {
   return 
 }*/
-function offset(x:number, y:number): Offset { return {x: x, y: y}; }
-function locatio(x:number, y:number): Location { return {x: x, y: y}; }
+export function offset(x:number, y:number): Offset { return {x: x, y: y}; }
+export function locatio(x:number, y:number): Location { return {x: x, y: y}; }
 
-var dirOffsets: collections.Dictionary<Dir, Offset> = new collections.Dictionary<Dir, Offset>();
-var offsetDirs: collections.Dictionary<Offset, Dir> = new collections.Dictionary<Offset, Dir>();
+export var dirOffsets: collections.Dictionary<Dir, Offset> = new collections.Dictionary<Dir, Offset>();
+export var offsetDirs: collections.Dictionary<Offset, Dir> = new collections.Dictionary<Offset, Dir>();
 [
 {dir: Dir.E, offset: offset(1,0)},
 {dir: Dir.NE, offset: offset(1,1)},
@@ -52,20 +52,20 @@ var offsetDirs: collections.Dictionary<Offset, Dir> = new collections.Dictionary
   dirOffsets.setValue(v.dir, v.offset);
   offsetDirs.setValue(v.offset, v.dir);
 });
-type CardinalDir = Dir;
+export type CardinalDir = Dir;
 
-function oppositeOffset(off:Offset):Offset {
+export function oppositeOffset(off:Offset):Offset {
   return offset(-off.x, -off.y);
 }
 
-function oppositeDir(dir:Dir):Dir {
+export function oppositeDir(dir:Dir):Dir {
   return offsetDirs.getValue(oppositeOffset(dirOffsets.getValue(dir)));
 }
 
-enum Parity { A = 0, B = 1 };
+export enum Parity { A = 0, B = 1 };
 
-type ID = number; // could be uuid?
-interface TrackEnd {
+export type ID = number; // could be uuid?
+export interface TrackEnd {
   id: ID;
   // this loc/dir could be 3D
   location: Location;
@@ -76,13 +76,13 @@ interface TrackEnd {
 //  b: Switch;
 }
 // create the bezier based on assumietAttribute("d",g the curve is <180deg, i guess, to choose ends
-interface Track {
+export interface Track {
   id: ID;
   ends: [Switch, Switch];
 //  a: Switch;
 //  b: Switch;
 }
-interface Switch {
+export interface Switch {
   id: ID;
   trackEnd: TrackEnd;
   //whichSideOfTrackEnd: Parity;
@@ -94,21 +94,21 @@ interface Switch {
 }
 // ugh i wish i had an in-memory relational database instead of keeping
 // track of all this by hand:
-interface TrackWorld {
+export interface TrackWorld {
   autoIncrement: number;
   trackEnds: {[id: number]: TrackEnd};
   tracks: {[id: number]: Track};
   switches: {[id: number]: Switch};
 }
 //var trackWorld = new TrackWorld();
-var trackWorld: TrackWorld = {
+export var trackWorld: TrackWorld = {
   autoIncrement: 0,
   trackEnds: {},
   tracks: {},
   switches: {}
 };
 // TODO look up whether one already exists and reuse that??
-function createTrackEnd(l: Location, d: NormalizedOffset): TrackEnd {
+export function createTrackEnd(l: Location, d: NormalizedOffset): TrackEnd {
   var trackEnd = {
     id: trackWorld.autoIncrement++,
     location: l,
@@ -124,7 +124,7 @@ function createTrackEnd(l: Location, d: NormalizedOffset): TrackEnd {
   trackWorld.switches[trackEnd.ends[Parity.B].id] = trackEnd.ends[Parity.B];
   return trackEnd;
 }
-function createTrack(ends: [Switch, Switch]) {
+export function createTrack(ends: [Switch, Switch]) {
   var track = {
     id: trackWorld.autoIncrement++,
     ends: ends
@@ -132,18 +132,18 @@ function createTrack(ends: [Switch, Switch]) {
   trackWorld.tracks[track.id] = track;
   return track;
 }
-function trackEndIsUnused(trackEnd: TrackEnd): boolean {
+export function trackEndIsUnused(trackEnd: TrackEnd): boolean {
   return (
     Object.keys(trackEnd.ends[Parity.A].tracks).length === 0 &&
     Object.keys(trackEnd.ends[Parity.B].tracks).length === 0);
 }
-function deleteTrackEnd(trackEnd: TrackEnd) {
+export function deleteTrackEnd(trackEnd: TrackEnd) {
   console.assert(trackEndIsUnused(trackEnd));
   delete trackWorld.switches[trackEnd.ends[Parity.A].id];
   delete trackWorld.switches[trackEnd.ends[Parity.B].id];
   delete trackWorld.trackEnds[trackEnd.id];
 }
-function deleteTrack(t: Track, deleteUnusedTrackEnds = true) {
+export function deleteTrack(t: Track, deleteUnusedTrackEnds = true) {
   for(var s of t.ends) {
     delete s.tracks[t.id];
     if(s.switchPosition === t.id) {
@@ -169,26 +169,26 @@ function deleteTrack(t: Track, deleteUnusedTrackEnds = true) {
 }
 
 // returns cardinaldir?. undefined and null apparently go in any type.
-function cardinalDirOfTrackEnd(end: TrackEnd): CardinalDir {
+export function cardinalDirOfTrackEnd(end: TrackEnd): CardinalDir {
   return offsetDirs.getValue(end.direction);
 }
-function cardinalDirsOfTrack(t: Track): [CardinalDir, CardinalDir] {
+export function cardinalDirsOfTrack(t: Track): [CardinalDir, CardinalDir] {
   // TODO normalize to the correct opposite for this track
   return [
     cardinalDirOfTrackEnd(t.ends[Parity.A].trackEnd),
     cardinalDirOfTrackEnd(t.ends[Parity.B].trackEnd)];
 }
-function switchIsJustOneTrack(s:Switch):boolean {
+export function switchIsJustOneTrack(s:Switch):boolean {
   return Object.keys(s.tracks).length === 1;
 }
-function switchTrack(s:Switch):Track {
+export function switchTrack(s:Switch):Track {
   return s.tracks[s.switchPosition];
 }
-function implicitOtherTracksOverlappingThisOneWithFrogs(t:Track): Track[] {
+export function implicitOtherTracksOverlappingThisOneWithFrogs(t:Track): Track[] {
   // TODO implement if needed
   return [];
 }
-function switchDirection(s:Switch): NormalizedOffset {
+export function switchDirection(s:Switch): NormalizedOffset {
   if(s.trackEnd.ends[Parity.A] === s) {
     return s.trackEnd.direction;
   } else {
@@ -196,13 +196,13 @@ function switchDirection(s:Switch): NormalizedOffset {
   }
 }
 
-function svgXYdString(xy:Offset): string {
+export function svgXYdString(xy:Offset): string {
   return `${xy.x} ${xy.y}`;
 }
 // TODO make it not be a monorail
 // two curves
 // ties
-function trackToSvg(t:Track): Element {
+export function trackToSvg(t:Track): Element {
   //var offsets:[Offset, Offset] = _.map(t.ends, switchDirection);
 //  var aoff = t.a.direction
 // can return a group <g>
