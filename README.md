@@ -7,6 +7,11 @@ Welcome, dear traveller or meddler!
 FAQ
 ===
 
+### I need to compile it??
+
+Yeah, you need the TypeScript tools. Run `tsc script.ts`
+unless this readme sentence is out of date.
+
 ### Is it finished?
 
 No.
