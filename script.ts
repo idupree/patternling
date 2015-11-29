@@ -57,6 +57,12 @@ export type CardinalDir = Dir;
 export function oppositeOffset(off:Offset):Offset {
   return offset(-off.x, -off.y);
 }
+export function addOffset(loc:Offset, off:Offset):Offset {
+  return offset(loc.x + off.x, loc.y + off.y);
+}
+export function subOffset(loc:Offset, off:Offset):Offset {
+  return offset(loc.x - off.x, loc.y - off.y);
+}
 
 export function oppositeDir(dir:Dir):Dir {
   return offsetDirs.getValue(oppositeOffset(dirOffsets.getValue(dir)));
@@ -206,16 +212,33 @@ export function trackToSvg(t:Track): Element {
   //var offsets:[Offset, Offset] = _.map(t.ends, switchDirection);
 //  var aoff = t.a.direction
 // can return a group <g>
+  var aLoc = t.ends[Parity.A].trackEnd.location;
+  var bLoc = t.ends[Parity.B].trackEnd.location;
+  console.log(aLoc,addOffset(aLoc, switchDirection(t.ends[Parity.A])));
   var d = `
-M ${svgXYdString(t.ends[Parity.A].trackEnd.location)} C
-${svgXYdString(switchDirection(t.ends[Parity.A]))}
-${svgXYdString(switchDirection(t.ends[Parity.B]))}
-${svgXYdString(t.ends[Parity.B].trackEnd.location)}
+M ${svgXYdString(aLoc)} C
+${svgXYdString(addOffset(aLoc, switchDirection(t.ends[Parity.A])))}
+${svgXYdString(addOffset(bLoc, switchDirection(t.ends[Parity.B])))}
+${svgXYdString(bLoc)}
 `;
   var path = document.createElementNS("http://www.w3.org/2000/svg", 'path');
   path.setAttribute("d", d);
   return path;
 }
+export function drawWorld() {
+  // i think this is where d3 might come in handy?
+  var svg = document.getElementById('world');
+  console.log(svg);
+  // TODO clear it
+  for(var tID of Object.keys(trackWorld.tracks)) {
+    var t = trackWorld.tracks[+tID];
+    svg.appendChild(trackToSvg(t));
+  }
+}
+var m = createTrackEnd({x: 70, y: 200}, {x:100, y:0});
+var n = createTrackEnd({x: 250, y: 300}, {x:100, y:0});
+var o = createTrack([m.ends[Parity.A], n.ends[Parity.B]]);
+drawWorld();
 
 // No frogs yet, besides cheaty crossing
 //interface Frog {
