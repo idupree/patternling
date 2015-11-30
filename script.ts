@@ -7,6 +7,8 @@
 // https://github.com/basarat/typescript-collections
 /// <reference path="collections.ts" />
 
+/// <reference path="bezier.d.ts" />
+
 module TrainWorldII {
 
 //type Dict = collections.Dictionary;
@@ -62,6 +64,12 @@ export function addOffset(loc:Offset, off:Offset):Offset {
 }
 export function subOffset(loc:Offset, off:Offset):Offset {
   return offset(loc.x - off.x, loc.y - off.y);
+}
+export function mulOffset(off:Offset, mul:number):Offset {
+  return offset(off.x * mul, off.y * mul);
+}
+export function offsetEuclideanDistance(off:Offset):number {
+  return Math.sqrt(off.x * off.x + off.y * off.y);
 }
 
 export function oppositeDir(dir:Dir):Dir {
@@ -205,6 +213,12 @@ export function switchDirection(s:Switch): NormalizedOffset {
 export function svgXYdString(xy:Offset): string {
   return `${xy.x} ${xy.y}`;
 }
+export function createSVGElement(name:string): SVGElement {
+  return document.createElementNS("http://www.w3.org/2000/svg", name) as SVGElement;
+}
+export function createSVGLine(): SVGLineElement {
+  return createSVGElement('line') as SVGLineElement;
+}
 // TODO make it not be a monorail
 // two curves
 // ties
@@ -214,31 +228,142 @@ export function trackToSvg(t:Track): Element {
 // can return a group <g>
   var aLoc = t.ends[Parity.A].trackEnd.location;
   var bLoc = t.ends[Parity.B].trackEnd.location;
-  console.log(aLoc,addOffset(aLoc, switchDirection(t.ends[Parity.A])));
+  var dist = offsetEuclideanDistance(subOffset(bLoc, aLoc));
+  //console.log(aLoc,addOffset(aLoc, switchDirection(t.ends[Parity.A])));
   var d = `
 M ${svgXYdString(aLoc)} C
-${svgXYdString(addOffset(aLoc, switchDirection(t.ends[Parity.A])))}
-${svgXYdString(addOffset(bLoc, switchDirection(t.ends[Parity.B])))}
+${svgXYdString(addOffset(aLoc,
+  mulOffset(switchDirection(t.ends[Parity.A]), dist/2)))}
+${svgXYdString(addOffset(bLoc,
+  mulOffset(switchDirection(t.ends[Parity.B]), dist/2)))}
 ${svgXYdString(bLoc)}
 `;
-  var path = document.createElementNS("http://www.w3.org/2000/svg", 'path');
+  var path = createSVGElement('path');
   path.setAttribute("d", d);
   return path;
+}
+export function trackEndToSvg(te: TrackEnd): Element {
+//  var line = createSVGElement('line');
+//  var line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+  var line = createSVGLine();
+  var loc = te.location;
+  var loc1 = addOffset(te.location, mulOffset(te.direction, 3));
+  var loc2 = subOffset(te.location, mulOffset(te.direction, 3));
+  // error TS2322: Type 'number' is not assignable to type 'SVGAnimatedLength'.
+  // Property 'animVal' is missing in type 'Number'.
+  // So I guess TypeScript doesn't understand SVG well enough (or I don't)
+  // line.x1 = loc1.x;
+  line.setAttribute("x1", loc1.x.toString());
+  line.setAttribute("y1", loc1.y.toString());
+  line.setAttribute("x2", loc2.x.toString());
+  line.setAttribute("y2", loc2.y.toString());
+  return line;
 }
 export function drawWorld() {
   // i think this is where d3 might come in handy?
   var svg = document.getElementById('world');
-  console.log(svg);
+  //console.log(svg);
   // TODO clear it
   for(var tID of Object.keys(trackWorld.tracks)) {
     var t = trackWorld.tracks[+tID];
     svg.appendChild(trackToSvg(t));
   }
+  for(var teID of Object.keys(trackWorld.trackEnds)) {
+    var trackEnd = trackWorld.trackEnds[+teID];
+    svg.appendChild(trackEndToSvg(trackEnd));
+  }
 }
-var m = createTrackEnd({x: 70, y: 200}, {x:100, y:0});
-var n = createTrackEnd({x: 250, y: 300}, {x:100, y:0});
+export function bezierFromPossibleTrack(s1: Switch, s2: Switch):Bezier {
+  var aLoc = s1.trackEnd.location;
+  var bLoc = s2.trackEnd.location;
+  var dist = offsetEuclideanDistance(subOffset(bLoc, aLoc));
+  return new Bezier([
+    aLoc,
+    addOffset(aLoc, mulOffset(switchDirection(s1), dist/2)),
+    addOffset(bLoc, mulOffset(switchDirection(s2), dist/2)),
+    bLoc
+  ]);
+}
+//this is terrible, TODO switch to underscore or other
+function randint(n:number):number {
+  return Math.floor(Math.random()*n);
+}
+export function createRandomTrackEnd(): TrackEnd {
+  var x = randint(500);
+  var y = randint(500);
+  var theta = Math.random()*(2*Math.PI);
+  return createTrackEnd(
+    {x: x, y: y},
+    {x:Math.cos(theta), y:Math.sin(theta)});
+}
+(function(){
+var trackEnds = [];
+for(var i = 0; i !== 100; ++i) {
+  trackEnds.push(createRandomTrackEnd());
+}
+for(var j = 0; j !== trackEnds.length; ++j) {
+  for(var k = j+1; k !== trackEnds.length; ++k) {
+    var trackEnd1 = trackEnds[j];
+    var trackEnd2 = trackEnds[k];
+    if(
+      (offsetEuclideanDistance(subOffset(
+        trackEnd1.location, trackEnd2.location))
+           < 100)
+    ) {
+      for(var parity1 = 0; parity1 !== 2; parity1++) {
+        for(var parity2 = 0; parity2 !== 2; parity2++) {
+          var s1 = trackEnd1.ends[parity1];
+          var s2 = trackEnd2.ends[parity2];
+          var bezier = bezierFromPossibleTrack(s1, s2);
+          var tooTightOfATurn = false;
+          for(var l = 0; l < 128; ++l) {
+            var t1 = l/128;
+            var t2 = (l+1)/128;
+            var p1 = bezier.get(t1);
+            var p2 = bezier.get(t2);
+            var dist = offsetEuclideanDistance(subOffset(p1, p2));
+            var tangent1 = bezier.derivative(t1);
+            var tangent2 = bezier.derivative(t2);
+            var angle1 = Math.atan2(tangent1.y, tangent1.x);
+            var angle2 = Math.atan2(tangent2.y, tangent2.x);
+            var angleDelta = Math.abs((Math.abs(angle2 - angle1) + Math.PI) % (2*Math.PI) - Math.PI);
+            var curveTightness = angleDelta / dist; // radians per pixel
+            //console.log(curveTightness);
+            if(curveTightness > 0.03) {
+              tooTightOfATurn = true;
+              break;
+            }
+          }
+          if(!tooTightOfATurn) {
+            createTrack([s1, s2]);
+          }
+        }
+      }
+    }
+  }
+}
+
+/*
+for(var j = 0; j !== 500; ++j) {
+  var end1 = randint(trackEnds.length - 1);
+  var end2 = end1 + 1 + randint(trackEnds.length - end1 - 1)
+  if(offsetEuclideanDistance(subOffset(
+        trackEnds[end1].location, trackEnds[end2].location))
+      < 100) {
+    createTrack([
+      trackEnds[end1].ends[randint(2)],
+      trackEnds[end2].ends[randint(2)],
+    ]);
+  }
+}
+*/
+
+// todo multiply in path craetion
+var m = createTrackEnd({x: 70, y: 200}, {x:1, y:0});
+var n = createTrackEnd({x: 250, y: 300}, {x:1, y:0});
 var o = createTrack([m.ends[Parity.A], n.ends[Parity.B]]);
 drawWorld();
+}());
 
 // No frogs yet, besides cheaty crossing
 //interface Frog {
