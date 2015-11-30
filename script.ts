@@ -71,6 +71,10 @@ export function mulOffset(off:Offset, mul:number):Offset {
 export function offsetEuclideanDistance(off:Offset):number {
   return Math.sqrt(off.x * off.x + off.y * off.y);
 }
+export function normalizeOffset(off:Offset):NormalizedOffset {
+  var dist = offsetEuclideanDistance(off);
+  return offset(off.x / dist, off.y / dist);
+}
 
 export function oppositeDir(dir:Dir):Dir {
   return offsetDirs.getValue(oppositeOffset(dirOffsets.getValue(dir)));
@@ -288,34 +292,90 @@ export function bezierFromPossibleTrack(s1: Switch, s2: Switch):Bezier {
 function randint(n:number):number {
   return Math.floor(Math.random()*n);
 }
+var arenaWidth = 500;
+var arenaHeight = 500;
+//var tileRadius = 60;
 export function createRandomTrackEnd(): TrackEnd {
-  var x = randint(500);
-  var y = randint(500);
+  var x = randint(arenaWidth);
+  var y = randint(arenaHeight);
   var theta = Math.random()*(2*Math.PI);
   return createTrackEnd(
     {x: x, y: y},
     {x:Math.cos(theta), y:Math.sin(theta)});
 }
+export function createRandomTrackEnds(n, trackEnds) {
+  for(var i = 0; i < n; ++i) {
+    trackEnds.push(createRandomTrackEnd());
+  }
+}
+export function createSquareGridTrackEnds(xFrom, yFrom, xTo, yTo, tileRadius, trackEnds) {
+  for(var x = xFrom; x < xTo; x += tileRadius*2) {
+    for(var y = yFrom; y < yTo; y += tileRadius*2) {
+      trackEnds.push(createTrackEnd(
+        {x: x, y: y},
+        {x: 0, y: 1}));
+      trackEnds.push(createTrackEnd(
+        {x: x+tileRadius, y: y+tileRadius},
+        {x: 1, y: 0}));
+    }
+  }
+}
+export function createHexGridTrackEnds(xFrom, yFrom, xTo, yTo, tileRadius, trackEnds) {
+  var sqrt3over2 = Math.sqrt(3) / 2;
+  var parity = tileRadius;
+    for(var y = yFrom; y < yTo; y += tileRadius*sqrt3over2*2) {
+    parity = parity ? 0 : tileRadius;
+  for(var x = xFrom + parity; x < xTo; x += tileRadius*2) {
+      trackEnds.push(createTrackEnd(
+        {x: x+tileRadius, y: y},
+        {x: 1, y: 0}));
+        //{x: 0, y: 1}));
+      trackEnds.push(createTrackEnd(
+        {x: x+tileRadius/2, y: y+tileRadius*sqrt3over2},
+        {x: 1/2, y: sqrt3over2}));
+      trackEnds.push(createTrackEnd(
+        {x: x-tileRadius/2, y: y+tileRadius*sqrt3over2},
+        {x: -1/2, y: sqrt3over2}));
+    }
+  }
+}
+// result is [0, pi]
+export function absAngleDelta(angle1: number, angle2: number): number {
+  return Math.abs((Math.abs(angle2 - angle1) + Math.PI) % (2*Math.PI) - Math.PI);
+}
 (function(){
 var trackEnds = [];
-for(var i = 0; i !== 100; ++i) {
-  trackEnds.push(createRandomTrackEnd());
-}
+//createRandomTrackEnds(100, trackEnds);
+//createSquareGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
+createHexGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
 for(var j = 0; j !== trackEnds.length; ++j) {
   for(var k = j+1; k !== trackEnds.length; ++k) {
     var trackEnd1 = trackEnds[j];
     var trackEnd2 = trackEnds[k];
-    if(
-      (offsetEuclideanDistance(subOffset(
-        trackEnd1.location, trackEnd2.location))
-           < 100)
-    ) {
+    var euclideanDist = offsetEuclideanDistance(subOffset(
+                          trackEnd1.location, trackEnd2.location);
+    if(euclideanDist < 128) {
       for(var parity1 = 0; parity1 !== 2; parity1++) {
         for(var parity2 = 0; parity2 !== 2; parity2++) {
           var s1 = trackEnd1.ends[parity1];
           var s2 = trackEnd2.ends[parity2];
           var bezier = bezierFromPossibleTrack(s1, s2);
+          var firstTangent = bezier.derivative(0);
+          var firstAngle = Math.atan2(firstTangent.y, firstTangent.x);
+          var lastTangent = bezier.derivative(1);
+          var lastAngle = Math.atan2(lastTangent.y, lastTangent.x);
+          var firstLastAngleDelta = absAngleDelta(firstAngle, lastAngle);
+          if(bezier.length() > 128) {
+            //console.log("long", trackEnd1.location, trackEnd2.location, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
+            continue;
+          }
+          // these checks could ignore z dimension if i want to add z, probably..
           var tooTightOfATurn = false;
+          if(firstLastAngleDelta > 3/4*Math.PI) {
+            // snobby against U-turns
+            //console.log("too u-turny", euclideanDist, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
+            continue;
+          }
           for(var l = 0; l < 128; ++l) {
             var t1 = l/128;
             var t2 = (l+1)/128;
@@ -326,15 +386,16 @@ for(var j = 0; j !== trackEnds.length; ++j) {
             var tangent2 = bezier.derivative(t2);
             var angle1 = Math.atan2(tangent1.y, tangent1.x);
             var angle2 = Math.atan2(tangent2.y, tangent2.x);
-            var angleDelta = Math.abs((Math.abs(angle2 - angle1) + Math.PI) % (2*Math.PI) - Math.PI);
+            var angleDelta = absAngleDelta(angle1, angle2);
             var curveTightness = angleDelta / dist; // radians per pixel
             //console.log(curveTightness);
-            if(curveTightness > 0.03) {
+            if(curveTightness > Math.PI / 64) {
               tooTightOfATurn = true;
               break;
             }
           }
           if(!tooTightOfATurn) {
+            //console.log("success!", trackEnd1.location, trackEnd2.location, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
             createTrack([s1, s2]);
           }
         }
@@ -358,10 +419,9 @@ for(var j = 0; j !== 500; ++j) {
 }
 */
 
-// todo multiply in path craetion
-var m = createTrackEnd({x: 70, y: 200}, {x:1, y:0});
-var n = createTrackEnd({x: 250, y: 300}, {x:1, y:0});
-var o = createTrack([m.ends[Parity.A], n.ends[Parity.B]]);
+//var m = createTrackEnd({x: 70, y: 200}, {x:1, y:0});
+//var n = createTrackEnd({x: 250, y: 300}, {x:1, y:0});
+//var o = createTrack([m.ends[Parity.A], n.ends[Parity.B]]);
 drawWorld();
 }());
 
