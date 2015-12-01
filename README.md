@@ -9,7 +9,7 @@ Welcome, dear traveller or meddler!
 Track generation as of December 1st
 ===
 
-The code is kind of a mess right now but the overview is first I
+The code is in `script.ts`. The overview is first I
 generate some "track end-points" that consist of a location and an
 orientation, and then I connect every pair of end-point sides[1] that meet
 certain criteria.
@@ -33,8 +33,11 @@ there are no trains.
 
 [1] I call each of the two sides of an end-point
 a "switch" because more than one track can be connected to the same
-side of an end point and in this case it will function as a switch
-once there are any trains.
+side of an end point.  If there are more than one track on one side
+(and at least one track on the other side), then it will function
+as a switch once there are any trains.  Otherwise it is a kind
+of silly name to call a straight-through track connection (or a
+dead-end) a "switch", but it works okay.
 
 FAQ
 ===
