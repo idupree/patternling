@@ -33,7 +33,7 @@ declare class Bezier {
   offset(t: number, d: number): BezierPoint;
   reduce(): Bezier[];
   arcs(threshold?: number): {x: number, y: number, s: number, e: number, r: number}[]; // what do those mean?
-  scale(d: number): Bezier; // docs are wrong, it does take an argument
+  scale(d: number): Bezier;
   outline(d: number): PolyBezier;
   outline(d1: number, d2: number): PolyBezier;
   outline(d1: number, d2: number, d3: number, d4: number): PolyBezier;
