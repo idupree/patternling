@@ -4,6 +4,8 @@ TrainWorld II
 
 Welcome, dear traveller or meddler!
 
+![trains5](https://cloud.githubusercontent.com/assets/947619/11516833/f933f082-9853-11e5-8b17-a1fd939dfad8.png)
+
 Track generation as of December 1st
 ===
 
