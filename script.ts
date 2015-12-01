@@ -434,7 +434,11 @@ drawWorld();
 //  CrossedTracks:
 //}
 
-// no traincars yet
+
+/*
+// no traincars yet;
+// this code is an unused relic that will be deleted
+// when its working version is ready.
 
 
 interface TrackUnit {
@@ -514,7 +518,7 @@ function trainToCss(oldLoc:Location, newLoc:Location, trainCar:TrainCar) {
 //   maybe something better with webgl or three.js)
 // (What about elevation?)
 
-
+*/
 
 }
 
