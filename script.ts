@@ -11,11 +11,6 @@
 
 module TrainWorldII {
 
-//type Dict = collections.Dictionary;
-
-//window.trains = {};
-//export var trains = {};
-
 // maths order
 export enum Dir {E, NE, N, NW, W, SW, S, SE};
 
@@ -90,35 +85,30 @@ export interface TrackEnd {
   // direction of end A
   direction: NormalizedOffset;
   ends: [Switch, Switch];
-//  a: Switch;
-//  b: Switch;
 }
-// create the bezier based on assumietAttribute("d",g the curve is <180deg, i guess, to choose ends
 export interface Track {
   id: ID;
   ends: [Switch, Switch];
-//  a: Switch;
-//  b: Switch;
 }
 export interface Switch {
   id: ID;
   trackEnd: TrackEnd;
   //whichSideOfTrackEnd: Parity;
-  // ^ that can be checked by identity based equality comparison
+  // ^ that can be checked by identity-based equality comparison
   tracks: {[id: number]: Track};
   switchPosition: ID; // track id
-//  tracks: Track[];
-//  switchPosition: number; // index into tracks array. can it be null if in a bad position?
 }
-// ugh i wish i had an in-memory relational database instead of keeping
-// track of all this by hand:
+// Ugh i wish i had an in-memory relational database instead of keeping
+// track of all this by hand. Is IndexedDB portably stable enough and also
+// does it have a good serialization format that I can manipulate in other
+// languages? To be fair, recursive JS objects can't trivially become JSON
+// either.
 export interface TrackWorld {
   autoIncrement: number;
   trackEnds: {[id: number]: TrackEnd};
   tracks: {[id: number]: Track};
   switches: {[id: number]: Switch};
 }
-//var trackWorld = new TrackWorld();
 export var trackWorld: TrackWorld = {
   autoIncrement: 0,
   trackEnds: {},
@@ -165,7 +155,7 @@ export function deleteTrack(t: Track, deleteUnusedTrackEnds = true) {
   for(var s of t.ends) {
     delete s.tracks[t.id];
     if(s.switchPosition === t.id) {
-      // TODO is this my fav algorithm?
+      // TODO is this my fav fallback-switch-position choice?
       // Is it even "safe" to automatically connect to a new route?
       // (In terms of trains now crashing into each other. Although
       // there's also no protection against deleting a track a train
@@ -227,13 +217,10 @@ export function createSVGLine(): SVGLineElement {
 // two curves
 // ties
 export function trackToSvg(t:Track): Element {
-  //var offsets:[Offset, Offset] = _.map(t.ends, switchDirection);
-//  var aoff = t.a.direction
-// can return a group <g>
+  // can return a group <g> if that becomes desired
   var aLoc = t.ends[Parity.A].trackEnd.location;
   var bLoc = t.ends[Parity.B].trackEnd.location;
   var dist = offsetEuclideanDistance(subOffset(bLoc, aLoc));
-  //console.log(aLoc,addOffset(aLoc, switchDirection(t.ends[Parity.A])));
   var d = `
 M ${svgXYdString(aLoc)} C
 ${svgXYdString(addOffset(aLoc,
@@ -266,7 +253,6 @@ export function trackEndToSvg(te: TrackEnd): Element {
 export function drawWorld() {
   // i think this is where d3 might come in handy?
   var svg = document.getElementById('world');
-  //console.log(svg);
   // TODO clear it
   for(var tID of Object.keys(trackWorld.tracks)) {
     var t = trackWorld.tracks[+tID];
@@ -294,7 +280,6 @@ function randint(n:number):number {
 }
 var arenaWidth = 500;
 var arenaHeight = 500;
-//var tileRadius = 60;
 export function createRandomTrackEnd(): TrackEnd {
   var x = randint(arenaWidth);
   var y = randint(arenaHeight);
