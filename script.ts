@@ -343,12 +343,8 @@ export function createHexGridTrackEnds(xFrom, yFrom, xTo, yTo, tileRadius, track
 export function absAngleDelta(angle1: number, angle2: number): number {
   return Math.abs((Math.abs(angle2 - angle1) + Math.PI) % (2*Math.PI) - Math.PI);
 }
-(function(){
-var trackEnds = [];
-//createRandomTrackEnds(100, trackEnds);
-//createSquareGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
-createHexGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
-for(var j = 0; j !== trackEnds.length; ++j) {
+export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
+  for(var j = 0; j !== trackEnds.length; ++j) {
   for(var k = j+1; k !== trackEnds.length; ++k) {
     var trackEnd1 = trackEnds[j];
     var trackEnd2 = trackEnds[k];
@@ -406,7 +402,14 @@ for(var j = 0; j !== trackEnds.length; ++j) {
       }
     }
   }
+  }
 }
+(function(){
+var trackEnds = [];
+//createRandomTrackEnds(100, trackEnds);
+//createSquareGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
+createHexGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
+connectAllTrackEndsThatMeetCriteria(trackEnds);
 
 /*
 for(var j = 0; j !== 500; ++j) {
