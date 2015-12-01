@@ -64,10 +64,10 @@ free, effortlessly. Right? Right???
 
 ## How do I look at the code?
 
-HTML: index.html
-CSS: style.css
-JS: script.ts (typescript that you should compile to javascript)
-third party libraries:
+HTML: index.html  
+CSS: style.css  
+JS: script.ts (typescript that you should compile to javascript)  
+third party libraries:  
  - collections.ts
  - bezier.js (I wrote bezier.d.ts to integrate it better with
      typescript.  There is one perf-related change from the original
