@@ -353,7 +353,7 @@ for(var j = 0; j !== trackEnds.length; ++j) {
     var trackEnd1 = trackEnds[j];
     var trackEnd2 = trackEnds[k];
     var euclideanDist = offsetEuclideanDistance(subOffset(
-                          trackEnd1.location, trackEnd2.location);
+                          trackEnd1.location, trackEnd2.location));
     if(euclideanDist < 128) {
       for(var parity1 = 0; parity1 !== 2; parity1++) {
         for(var parity2 = 0; parity2 !== 2; parity2++) {
@@ -370,12 +370,13 @@ for(var j = 0; j !== trackEnds.length; ++j) {
             continue;
           }
           // these checks could ignore z dimension if i want to add z, probably..
-          var tooTightOfATurn = false;
           if(firstLastAngleDelta > 3/4*Math.PI) {
             // snobby against U-turns
             //console.log("too u-turny", euclideanDist, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
             continue;
           }
+          // maybe TODO use the bezier library's 'arcs' code?
+          var maxCurveTightness = 0;
           for(var l = 0; l < 128; ++l) {
             var t1 = l/128;
             var t2 = (l+1)/128;
@@ -388,13 +389,16 @@ for(var j = 0; j !== trackEnds.length; ++j) {
             var angle2 = Math.atan2(tangent2.y, tangent2.x);
             var angleDelta = absAngleDelta(angle1, angle2);
             var curveTightness = angleDelta / dist; // radians per pixel
-            //console.log(curveTightness);
-            if(curveTightness > Math.PI / 64) {
-              tooTightOfATurn = true;
-              break;
+            if(maxCurveTightness < curveTightness) {
+              maxCurveTightness = curveTightness;
             }
+            //console.log(curveTightness);
           }
-          if(!tooTightOfATurn) {
+          if(maxCurveTightness < Math.PI / 64) {
+          //if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
+          //if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
+          //if(true) {
+          //if(maxCurveTightness < Math.PI / 64 && (maxCurveTightness < Math.PI / 128 || Math.random() > 0.5)) {
             //console.log("success!", trackEnd1.location, trackEnd2.location, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
             createTrack([s1, s2]);
           }
