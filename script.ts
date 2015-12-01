@@ -394,8 +394,8 @@ for(var j = 0; j !== trackEnds.length; ++j) {
             }
             //console.log(curveTightness);
           }
-          if(maxCurveTightness < Math.PI / 64) {
-          //if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
+          //if(maxCurveTightness < Math.PI / 64) {
+          if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
           //if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
           //if(true) {
           //if(maxCurveTightness < Math.PI / 64 && (maxCurveTightness < Math.PI / 128 || Math.random() > 0.5)) {
