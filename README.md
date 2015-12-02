@@ -73,6 +73,5 @@ JS: script.ts (typescript that you should compile to javascript)
 Third party libraries:  
  - collections.ts
  - bezier.js (I wrote bezier.d.ts to integrate it better with
-     typescript.  There is one perf-related change from the original
-     bezier.js to fix https://github.com/Pomax/bezierjs/issues/17 )
+     typescript)
 
