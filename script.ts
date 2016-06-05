@@ -106,7 +106,8 @@ export enum Parity { A = 0, B = 1 };
 export type ID = number; // could be uuid?
 export interface TrackEnd {
   id: ID;
-  // idea: this loc/dir could be 3D:
+  // Brainstorm: perhaps this loc/dir could be changed to be 3D
+  // if I want hills:
   location: Location;
   // direction of end A:
   direction: NormalizedOffset;
@@ -141,8 +142,8 @@ export var trackWorld: TrackWorld = {
   tracks: {},
   switches: {}
 };
-// In createTrackEnd: TODO look up whether a TrackEnd already exists
-// at this location and reuse that?
+// Possible TODO in createTrackEnd: look up whether a TrackEnd already exists
+// at this location+direction and reuse that?
 export function createTrackEnd(l: Location, d: NormalizedOffset): TrackEnd {
   var trackEnd = {
     id: trackWorld.autoIncrement++,
