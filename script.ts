@@ -1,5 +1,3 @@
-//(function(){
-//"use strict";
 
 // My vim doesn't know about typescript:
 // vim: filetype=javascript
@@ -11,7 +9,16 @@
 
 module TrainWorldII {
 
-// maths order
+// This module currently can represent a network
+// of train tracks represented as connected bezier
+// curves.  In the future, it will also be able to
+// represent trains on these tracks.
+
+// # Data types
+
+// ## 2D locations/directions
+
+// maths order (counterclockwise from +x)
 export enum Dir {E, NE, N, NW, W, SW, S, SE};
 
 export interface Offset {
@@ -19,7 +26,7 @@ export interface Offset {
   y: number;
 }
 export interface NormalizedOffset {
-  // x^2+y^2 approximately = 1
+  // normalized such that: x^2+y^2 approximately = 1
   x: number;
   y: number;
 }
@@ -27,13 +34,12 @@ export interface Location {
   x: number;
   y: number;
 }
-//toString?
-/*function xyToString(xy: Offset): string {
-  return 
-}*/
 export function offset(x:number, y:number): Offset { return {x: x, y: y}; }
+// 'locatio' instead of 'location' so as not to overlap with window.location
 export function locatio(x:number, y:number): Location { return {x: x, y: y}; }
 
+// Dictionaries to look up the correspondence between the eight
+// directions and their (manhattan-movement-esque) offsets.
 export var dirOffsets: collections.Dictionary<Dir, Offset> = new collections.Dictionary<Dir, Offset>();
 export var offsetDirs: collections.Dictionary<Offset, Dir> = new collections.Dictionary<Offset, Dir>();
 [
@@ -49,6 +55,7 @@ export var offsetDirs: collections.Dictionary<Offset, Dir> = new collections.Dic
   dirOffsets.setValue(v.dir, v.offset);
   offsetDirs.setValue(v.offset, v.dir);
 });
+// N/S/E/W only
 export type CardinalDir = Dir;
 
 export function oppositeOffset(off:Offset):Offset {
@@ -75,14 +82,33 @@ export function oppositeDir(dir:Dir):Dir {
   return offsetDirs.getValue(oppositeOffset(dirOffsets.getValue(dir)));
 }
 
+// ## Track organization.
+//
+// Tracks are composed of segments (type Track) that are bezier-curve-shaped.
+// They are connected in a slightly convoluted way in order to allow
+// tracks splitting (a.k.a. switches) including double slip switches.
+//
+// Two track segments are joined with a connection like this:
+// Track -- Switch -- TrackEnd -- Switch -- Track
+//
+// The TrackEnd stores the location and orientation of the track connection.
+// The TrackEnd has A and B sides, each of which has one Switch. Each
+// Switch has many Tracks. The Switch records which its Tracks it's
+// currently switched to (trains can arrive and depart there).
+// For track connections with no options, this is a very dull record.
+//
+// Tracks also have A and B ends; no consistent relation to the A and B
+// in a TrackEnd.  These are arbitrary orderings to make it possible for
+// code to discuss which end it's talking about.
+
 export enum Parity { A = 0, B = 1 };
 
 export type ID = number; // could be uuid?
 export interface TrackEnd {
   id: ID;
-  // this loc/dir could be 3D
+  // idea: this loc/dir could be 3D:
   location: Location;
-  // direction of end A
+  // direction of end A:
   direction: NormalizedOffset;
   ends: [Switch, Switch];
 }
@@ -93,16 +119,16 @@ export interface Track {
 export interface Switch {
   id: ID;
   trackEnd: TrackEnd;
-  //whichSideOfTrackEnd: Parity;
-  // ^ that can be checked by identity-based equality comparison
   tracks: {[id: number]: Track};
   switchPosition: ID; // track id
 }
-// Ugh i wish i had an in-memory relational database instead of keeping
+// TrackWorld is a little like a relational database.
+// All world-objects are here, indexed by IDs.
+//
+// I wish I had an in-memory relational database instead of keeping
 // track of all this by hand. Is IndexedDB portably stable enough and also
 // does it have a good serialization format that I can manipulate in other
-// languages? To be fair, recursive JS objects can't trivially become JSON
-// either.
+// languages?
 export interface TrackWorld {
   autoIncrement: number;
   trackEnds: {[id: number]: TrackEnd};
@@ -115,7 +141,8 @@ export var trackWorld: TrackWorld = {
   tracks: {},
   switches: {}
 };
-// TODO look up whether one already exists and reuse that??
+// In createTrackEnd: TODO look up whether a TrackEnd already exists
+// at this location and reuse that?
 export function createTrackEnd(l: Location, d: NormalizedOffset): TrackEnd {
   var trackEnd = {
     id: trackWorld.autoIncrement++,
@@ -155,13 +182,20 @@ export function deleteTrack(t: Track, deleteUnusedTrackEnds = true) {
   for(var s of t.ends) {
     delete s.tracks[t.id];
     if(s.switchPosition === t.id) {
-      // TODO is this my fav fallback-switch-position choice?
+      // A switch cannot point to a no-longer-existent track.
+      // So we need to point it at something else that still exists.
+      // (There's currently an invariant that it's pointing at *something*
+      // unless there are no tracks connected on this side at all.)
+      //
+      // TODO is this my favorite fallback-switch-position choice?
       // Is it even "safe" to automatically connect to a new route?
       // (In terms of trains now crashing into each other. Although
       // there's also no protection against deleting a track a train
       // is on, also TODO.)
-      // Should it behave differently depending whether there's only one
-      // alt left?
+      //
+      // Should it behave differently depending whether there is more
+      // than one alternative left? (In which the choice between
+      // the remaining ones is kind of arbitrary.)
       var alts = Object.keys(s.tracks);
       if(alts.length === 0) {
         s.switchPosition = null;
@@ -176,12 +210,15 @@ export function deleteTrack(t: Track, deleteUnusedTrackEnds = true) {
   delete trackWorld.tracks[t.id];
 }
 
-// returns cardinaldir?. undefined and null apparently go in any type.
+// If the track-end is pointing exactly N/S/E/W, returns that;
+// otherwise returns undefined.
 export function cardinalDirOfTrackEnd(end: TrackEnd): CardinalDir {
   return offsetDirs.getValue(end.direction);
 }
 export function cardinalDirsOfTrack(t: Track): [CardinalDir, CardinalDir] {
-  // TODO normalize to the correct opposite for this track
+  // TODO: this does not check the A/B parity of the TrackEnds.
+  // So it might (for example) return N when it would be less confusing to
+  // return S, from the point of view of the Track.
   return [
     cardinalDirOfTrackEnd(t.ends[Parity.A].trackEnd),
     cardinalDirOfTrackEnd(t.ends[Parity.B].trackEnd)];
@@ -192,10 +229,17 @@ export function switchIsJustOneTrack(s:Switch):boolean {
 export function switchTrack(s:Switch):Track {
   return s.tracks[s.switchPosition];
 }
+// "frogs" are where two tracks overlap at an angle without
+// trains being able to switch which track they're on.
+// They can arise in this sim just by tracks overlapping.
+// This function (once implemented) will find out which tracks
+// are overlapping a given track.
 export function implicitOtherTracksOverlappingThisOneWithFrogs(t:Track): Track[] {
   // TODO implement if needed
   return [];
 }
+// Returns the direction that the tracks connected to this
+// Switch are pointed at this end.
 export function switchDirection(s:Switch): NormalizedOffset {
   if(s.trackEnd.ends[Parity.A] === s) {
     return s.trackEnd.direction;
@@ -203,6 +247,23 @@ export function switchDirection(s:Switch): NormalizedOffset {
     return oppositeOffset(s.trackEnd.direction);
   }
 }
+// Returns the bezier curve of an imaginary Track connecting
+// these two Switches, regardless of whether this Track exists.
+export function bezierFromPossibleTrack(s1: Switch, s2: Switch):Bezier {
+  var aLoc = s1.trackEnd.location;
+  var bLoc = s2.trackEnd.location;
+  var dist = offsetEuclideanDistance(subOffset(bLoc, aLoc));
+  return new Bezier([
+    aLoc,
+    addOffset(aLoc, mulOffset(switchDirection(s1), dist/2)),
+    addOffset(bLoc, mulOffset(switchDirection(s2), dist/2)),
+    bLoc
+  ]);
+}
+
+
+
+// # code to display track-world as SVG
 
 export function svgXYdString(xy:Offset): string {
   return `${xy.x} ${xy.y}`;
@@ -213,14 +274,15 @@ export function createSVGElement(name:string): SVGElement {
 export function createSVGLine(): SVGLineElement {
   return createSVGElement('line') as SVGLineElement;
 }
-// TODO make it not be a monorail
-// two curves
-// ties
+// TODO make it not look like a monorail:
+// - two curves
+// - ties
 export function trackToSvg(t:Track): Element {
   // can return a group <g> if that becomes desired
   var aLoc = t.ends[Parity.A].trackEnd.location;
   var bLoc = t.ends[Parity.B].trackEnd.location;
   var dist = offsetEuclideanDistance(subOffset(bLoc, aLoc));
+  // SVG syntax for bezier curves:
   var d = `
 M ${svgXYdString(aLoc)} C
 ${svgXYdString(addOffset(aLoc,
@@ -234,8 +296,6 @@ ${svgXYdString(bLoc)}
   return path;
 }
 export function trackEndToSvg(te: TrackEnd): Element {
-//  var line = createSVGElement('line');
-//  var line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
   var line = createSVGLine();
   var loc = te.location;
   var loc1 = addOffset(te.location, mulOffset(te.direction, 3));
@@ -251,9 +311,10 @@ export function trackEndToSvg(te: TrackEnd): Element {
   return line;
 }
 export function drawWorld() {
-  // i think this is where d3 might come in handy?
+  // I think this is where d3 might come in handy?
   var svg = document.getElementById('world');
-  // TODO clear it
+  // TODO remove any old content from the #world element
+  // before adding more.
   for(var tID of Object.keys(trackWorld.tracks)) {
     var t = trackWorld.tracks[+tID];
     svg.appendChild(trackToSvg(t));
@@ -263,18 +324,11 @@ export function drawWorld() {
     svg.appendChild(trackEndToSvg(trackEnd));
   }
 }
-export function bezierFromPossibleTrack(s1: Switch, s2: Switch):Bezier {
-  var aLoc = s1.trackEnd.location;
-  var bLoc = s2.trackEnd.location;
-  var dist = offsetEuclideanDistance(subOffset(bLoc, aLoc));
-  return new Bezier([
-    aLoc,
-    addOffset(aLoc, mulOffset(switchDirection(s1), dist/2)),
-    addOffset(bLoc, mulOffset(switchDirection(s2), dist/2)),
-    bLoc
-  ]);
-}
-//this is terrible, TODO switch to underscore or other
+
+
+// # Pretty random world generation
+
+// This rand function is terrible; TODO switch to underscore or other.
 function randint(n:number):number {
   return Math.floor(Math.random()*n);
 }
@@ -375,6 +429,7 @@ export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
             }
             //console.log(curveTightness);
           }
+          // These commented lines contain various options for making different pretty designs.
           //if(maxCurveTightness < Math.PI / 64) {
           if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
           //if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
@@ -389,6 +444,10 @@ export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
   }
   }
 }
+
+
+// # Actually generate the world
+
 (function(){
 var trackEnds = [];
 //createRandomTrackEnds(100, trackEnds);
@@ -416,6 +475,9 @@ for(var j = 0; j !== 500; ++j) {
 //var o = createTrack([m.ends[Parity.A], n.ends[Parity.B]]);
 drawWorld();
 }());
+
+
+// # unfinished commented-out code
 
 // No frogs yet, besides cheaty crossing
 //interface Frog {
@@ -510,4 +572,3 @@ function trainToCss(oldLoc:Location, newLoc:Location, trainCar:TrainCar) {
 
 }
 
-//}());
