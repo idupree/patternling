@@ -311,18 +311,33 @@ export function trackEndToSvg(te: TrackEnd): Element {
   line.setAttribute("y2", loc2.y.toString());
   return line;
 }
-export function drawWorld() {
+export function drawWorldOnPage() {
+  drawWorldIn(document.getElementById('world'));
+}
+export function drawWorldSVG(): SVGSVGElement {
+  var svgElem = createSVGElement('svg') as SVGSVGElement;
+  drawWorldIn(svgElem);
+  return svgElem;
+}
+export function drawWorldSVGText(): string {
+  var div = document.createElement('div');
+  div.appendChild(drawWorldSVG());
+  return div.innerHTML;
+}
+export function drawWorldIn(svgElem) {
+  if(!svgElem) {
+    return;
+  }
   // I think this is where d3 might come in handy?
-  var svg = document.getElementById('world');
   // TODO remove any old content from the #world element
   // before adding more.
   for(var tID of Object.keys(trackWorld.tracks)) {
     var t = trackWorld.tracks[+tID];
-    svg.appendChild(trackToSvg(t));
+    svgElem.appendChild(trackToSvg(t));
   }
   for(var teID of Object.keys(trackWorld.trackEnds)) {
     var trackEnd = trackWorld.trackEnds[+teID];
-    svg.appendChild(trackEndToSvg(trackEnd));
+    svgElem.appendChild(trackEndToSvg(trackEnd));
   }
 }
 
@@ -449,32 +464,39 @@ export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
 
 // # Actually generate the world
 
-(function(){
-var trackEnds = [];
-//createRandomTrackEnds(100, trackEnds);
-//createSquareGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
-createHexGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
-connectAllTrackEndsThatMeetCriteria(trackEnds);
+export function demoInit() {
+  var trackEnds = [];
+  //createRandomTrackEnds(100, trackEnds);
+  //createSquareGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
+  createHexGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
+  connectAllTrackEndsThatMeetCriteria(trackEnds);
 
-/*
-for(var j = 0; j !== 500; ++j) {
-  var end1 = randint(trackEnds.length - 1);
-  var end2 = end1 + 1 + randint(trackEnds.length - end1 - 1)
-  if(offsetEuclideanDistance(subOffset(
-        trackEnds[end1].location, trackEnds[end2].location))
-      < 100) {
-    createTrack([
-      trackEnds[end1].ends[randint(2)],
-      trackEnds[end2].ends[randint(2)],
-    ]);
+  /*
+  for(var j = 0; j !== 500; ++j) {
+    var end1 = randint(trackEnds.length - 1);
+    var end2 = end1 + 1 + randint(trackEnds.length - end1 - 1)
+    if(offsetEuclideanDistance(subOffset(
+          trackEnds[end1].location, trackEnds[end2].location))
+        < 100) {
+      createTrack([
+        trackEnds[end1].ends[randint(2)],
+        trackEnds[end2].ends[randint(2)],
+      ]);
+    }
   }
-}
-*/
+  */
 
-//var m = createTrackEnd({x: 70, y: 200}, {x:1, y:0});
-//var n = createTrackEnd({x: 250, y: 300}, {x:1, y:0});
-//var o = createTrack([m.ends[Parity.A], n.ends[Parity.B]]);
-drawWorld();
+  //var m = createTrackEnd({x: 70, y: 200}, {x:1, y:0});
+  //var n = createTrackEnd({x: 250, y: 300}, {x:1, y:0});
+  //var o = createTrack([m.ends[Parity.A], n.ends[Parity.B]]);
+}
+
+(function(){
+  //console.log("hi1");
+  demoInit();
+  //console.log(drawWorldSVGText());
+  drawWorldOnPage();
+  //console.log("hi2");
 }());
 
 
