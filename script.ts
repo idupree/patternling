@@ -16,6 +16,9 @@ var is_nodejs = (typeof document === 'undefined' && typeof require !== 'undefine
 if(is_nodejs) {
   var jsdom = require("jsdom");
   var document: Document = jsdom.jsdom("<html><body></body></html>", {});
+  var fs = require('fs');
+  eval(fs.readFileSync('./bezier.js', 'utf8'));
+  eval(fs.readFileSync('./collections.js', 'utf8') + '\nglobal.collections = collections;\n');
 }
 
 namespace TrainWorldII {
