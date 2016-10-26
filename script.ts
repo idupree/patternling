@@ -320,8 +320,14 @@ export function drawWorldSVG(): SVGSVGElement {
   return svgElem;
 }
 export function drawWorldSVGText(): string {
+  var svgElem = drawWorldSVG();
+  // outerHTML does not by itself set xmlns= to make
+  // the serialization be correct SVG XML, so set it
+  // here.
+  svgElem.setAttribute('xmlns', "http://www.w3.org/2000/svg");
+  svgElem.setAttribute('version', "1.1");
   var div = document.createElement('div');
-  div.appendChild(drawWorldSVG());
+  div.appendChild(svgElem);
   return div.innerHTML;
 }
 export function drawWorldIn(svgElem) {
