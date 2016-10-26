@@ -7,8 +7,8 @@
 
 /// <reference path="bezier.d.ts" />
 
-module TrainWorldII {
 
+namespace TrainWorldII {
 // This module currently can represent a network
 // of train tracks represented as connected bezier
 // curves.  In the future, it will also be able to
