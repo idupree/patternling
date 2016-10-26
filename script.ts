@@ -307,6 +307,9 @@ ${svgXYdString(bLoc)}
 `;
   var path = createSVGElement('path');
   path.setAttribute("d", d);
+  path.setAttribute("stroke", "#000");
+  path.setAttribute("stroke-width", "5");
+  path.setAttribute("fill-opacity", "0.0");
   return path;
 }
 export function trackEndToSvg(te: TrackEnd): Element {
@@ -322,6 +325,8 @@ export function trackEndToSvg(te: TrackEnd): Element {
   line.setAttribute("y1", loc1.y.toString());
   line.setAttribute("x2", loc2.x.toString());
   line.setAttribute("y2", loc2.y.toString());
+  line.setAttribute("stroke", "#808");
+  line.setAttribute("stroke-width", "2");
   return line;
 }
 export function drawWorldOnPage() {
