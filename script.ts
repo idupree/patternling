@@ -8,6 +8,16 @@
 /// <reference path="bezier.d.ts" />
 
 
+// These import statements were tried:
+//   import jsdom from "./node_modules/jsdom/lib/jsdom";
+//   import { Bezier } from "./bezier";
+declare var require: any;
+var is_nodejs = (typeof document === 'undefined' && typeof require !== 'undefined');
+if(is_nodejs) {
+  var jsdom = require("jsdom");
+  var document: Document = jsdom.jsdom("<html><body></body></html>", {});
+}
+
 namespace TrainWorldII {
 // This module currently can represent a network
 // of train tracks represented as connected bezier
@@ -500,8 +510,11 @@ export function demoInit() {
 (function(){
   //console.log("hi1");
   demoInit();
-  //console.log(drawWorldSVGText());
-  drawWorldOnPage();
+  if(is_nodejs) {
+    console.log(drawWorldSVGText());
+  } else {
+    drawWorldOnPage();
+  }
   //console.log("hi2");
 }());
 

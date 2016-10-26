@@ -1142,6 +1142,7 @@
 
 
   if(typeof module !== "undefined" && module.exports) {
+    global.Bezier = Bezier;
     module.exports = Bezier;
   }
 
