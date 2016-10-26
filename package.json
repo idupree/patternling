@@ -1,0 +1,24 @@
+{
+  "name": "trainworldii",
+  "version": "1.0.0",
+  "description": "design generator",
+  "main": "bezier.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/idupree/trainworldii.git"
+  },
+  "author": "idupree",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/idupree/trainworldii/issues"
+  },
+  "homepage": "https://github.com/idupree/trainworldii#readme",
+  "dependencies": {
+    "@types/jsdom": "^2.0.29",
+    "jsdom": "^9.8.0",
+    "twit": "^2.2.5"
+  }
+}
