@@ -422,6 +422,13 @@ export function createHexGridTrackEnds(xFrom, yFrom, xTo, yTo, tileRadius, track
 export function absAngleDelta(angle1: number, angle2: number): number {
   return Math.abs((Math.abs(angle2 - angle1) + Math.PI) % (2*Math.PI) - Math.PI);
 }
+export function absFirstLastAngleDelta(bezier: Bezier): number {
+  var firstTangent = bezier.derivative(0);
+  var firstAngle = Math.atan2(firstTangent.y, firstTangent.x);
+  var lastTangent = bezier.derivative(1);
+  var lastAngle = Math.atan2(lastTangent.y, lastTangent.x);
+  return absAngleDelta(firstAngle, lastAngle);
+}
 export function approximateMaxCurveTightness(bezier: Bezier): number {
   // maybe TODO use the bezier library's 'arcs' code?
   var maxCurveTightness = 0; // measured in radians per pixel
@@ -444,50 +451,54 @@ export function approximateMaxCurveTightness(bezier: Bezier): number {
   }
   return maxCurveTightness;
 }
-export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
+// (excludes a track-end connecting to itself on either
+// the same or opposite side)
+// Track-end-side = Switch
+export function forEachNearbyTrackEndSidePair(trackEnds, maxDist, callback: (s1: Switch, s2: Switch, bezier: Bezier)=>void) {
   for(var j = 0; j !== trackEnds.length; ++j) {
   for(var k = j+1; k !== trackEnds.length; ++k) {
     var trackEnd1 = trackEnds[j];
     var trackEnd2 = trackEnds[k];
     var euclideanDist = offsetEuclideanDistance(subOffset(
                           trackEnd1.location, trackEnd2.location));
-    if(euclideanDist < 128) {
+    if(euclideanDist <= maxDist) {
       for(var parity1 = 0; parity1 !== 2; parity1++) {
         for(var parity2 = 0; parity2 !== 2; parity2++) {
           var s1 = trackEnd1.ends[parity1];
           var s2 = trackEnd2.ends[parity2];
           var bezier = bezierFromPossibleTrack(s1, s2);
-          var firstTangent = bezier.derivative(0);
-          var firstAngle = Math.atan2(firstTangent.y, firstTangent.x);
-          var lastTangent = bezier.derivative(1);
-          var lastAngle = Math.atan2(lastTangent.y, lastTangent.x);
-          var firstLastAngleDelta = absAngleDelta(firstAngle, lastAngle);
-          if(bezier.length() > 128) {
+          if(bezier.length() > maxDist) {
             //console.log("long", trackEnd1.location, trackEnd2.location, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
             continue;
           }
-          // these checks could ignore z dimension if i want to add z, probably..
-          if(firstLastAngleDelta > 3/4*Math.PI) {
-            // snobby against U-turns
-            //console.log("too u-turny", euclideanDist, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
-            continue;
-          }
-          // radians per pixel
-          var maxCurveTightness = approximateMaxCurveTightness(bezier);
-          // These commented lines contain various options for making different pretty designs.
-          //if(maxCurveTightness < Math.PI / 64) {
-          if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
-          //if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
-          //if(true) {
-          //if(maxCurveTightness < Math.PI / 64 && (maxCurveTightness < Math.PI / 128 || Math.random() > 0.5)) {
-            //console.log("success!", trackEnd1.location, trackEnd2.location, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
-            createTrack([s1, s2]);
-          }
+          callback(s1, s2, bezier);
         }
       }
     }
   }
   }
+}
+export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
+  forEachNearbyTrackEndSidePair(trackEnds, 128, function(s1, s2, bezier) {
+    var firstLastAngleDelta = absFirstLastAngleDelta(bezier);
+    // these checks could ignore z dimension if i want to add z, probably..
+    if(firstLastAngleDelta > 3/4*Math.PI) {
+      // snobby against U-turns
+      //console.log("too u-turny", euclideanDist, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
+      return;
+    }
+    // radians per pixel
+    var maxCurveTightness = approximateMaxCurveTightness(bezier);
+    // These commented lines contain various options for making different pretty designs.
+    //if(maxCurveTightness < Math.PI / 64) {
+    if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
+    //if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
+    //if(true) {
+    //if(maxCurveTightness < Math.PI / 64 && (maxCurveTightness < Math.PI / 128 || Math.random() > 0.5)) {
+      //console.log("success!", trackEnd1.location, trackEnd2.location, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
+      createTrack([s1, s2]);
+    }
+  });
 }
 
 
