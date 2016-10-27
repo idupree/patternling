@@ -422,6 +422,28 @@ export function createHexGridTrackEnds(xFrom, yFrom, xTo, yTo, tileRadius, track
 export function absAngleDelta(angle1: number, angle2: number): number {
   return Math.abs((Math.abs(angle2 - angle1) + Math.PI) % (2*Math.PI) - Math.PI);
 }
+export function approximateMaxCurveTightness(bezier: Bezier): number {
+  // maybe TODO use the bezier library's 'arcs' code?
+  var maxCurveTightness = 0; // measured in radians per pixel
+  for(var l = 0; l < 128; ++l) {
+    var t1 = l/128;
+    var t2 = (l+1)/128;
+    var p1 = bezier.get(t1);
+    var p2 = bezier.get(t2);
+    var dist = offsetEuclideanDistance(subOffset(p1, p2));
+    var tangent1 = bezier.derivative(t1);
+    var tangent2 = bezier.derivative(t2);
+    var angle1 = Math.atan2(tangent1.y, tangent1.x);
+    var angle2 = Math.atan2(tangent2.y, tangent2.x);
+    var angleDelta = absAngleDelta(angle1, angle2);
+    var curveTightness = angleDelta / dist; // radians per pixel
+    if(maxCurveTightness < curveTightness) {
+      maxCurveTightness = curveTightness;
+    }
+    //console.log(curveTightness);
+  }
+  return maxCurveTightness;
+}
 export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
   for(var j = 0; j !== trackEnds.length; ++j) {
   for(var k = j+1; k !== trackEnds.length; ++k) {
@@ -450,25 +472,8 @@ export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
             //console.log("too u-turny", euclideanDist, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
             continue;
           }
-          // maybe TODO use the bezier library's 'arcs' code?
-          var maxCurveTightness = 0;
-          for(var l = 0; l < 128; ++l) {
-            var t1 = l/128;
-            var t2 = (l+1)/128;
-            var p1 = bezier.get(t1);
-            var p2 = bezier.get(t2);
-            var dist = offsetEuclideanDistance(subOffset(p1, p2));
-            var tangent1 = bezier.derivative(t1);
-            var tangent2 = bezier.derivative(t2);
-            var angle1 = Math.atan2(tangent1.y, tangent1.x);
-            var angle2 = Math.atan2(tangent2.y, tangent2.x);
-            var angleDelta = absAngleDelta(angle1, angle2);
-            var curveTightness = angleDelta / dist; // radians per pixel
-            if(maxCurveTightness < curveTightness) {
-              maxCurveTightness = curveTightness;
-            }
-            //console.log(curveTightness);
-          }
+          // radians per pixel
+          var maxCurveTightness = approximateMaxCurveTightness(bezier);
           // These commented lines contain various options for making different pretty designs.
           //if(maxCurveTightness < Math.PI / 64) {
           if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
