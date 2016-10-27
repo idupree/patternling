@@ -478,57 +478,43 @@ export function forEachNearbyTrackEndSidePair(trackEnds, maxDist, callback: (s1:
   }
   }
 }
-export function connectAllTrackEndsThatMeetCriteria(trackEnds) {
-  forEachNearbyTrackEndSidePair(trackEnds, 128, function(s1, s2, bezier) {
-    var firstLastAngleDelta = absFirstLastAngleDelta(bezier);
-    // these checks could ignore z dimension if i want to add z, probably..
-    if(firstLastAngleDelta > 3/4*Math.PI) {
-      // snobby against U-turns
-      //console.log("too u-turny", euclideanDist, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
-      return;
-    }
-    // radians per pixel
-    var maxCurveTightness = approximateMaxCurveTightness(bezier);
-    // These commented lines contain various options for making different pretty designs.
-    //if(maxCurveTightness < Math.PI / 64) {
-    if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
-    //if(maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) {
-    //if(true) {
-    //if(maxCurveTightness < Math.PI / 64 && (maxCurveTightness < Math.PI / 128 || Math.random() > 0.5)) {
-      //console.log("success!", trackEnd1.location, trackEnd2.location, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
-      createTrack([s1, s2]);
-    }
-  });
-}
-
 
 // # Actually generate the world
 
 export function demoInit() {
   var trackEnds = [];
-  //createRandomTrackEnds(100, trackEnds);
-  //createSquareGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
-  createHexGridTrackEnds(20, 20, arenaWidth, arenaHeight, 60, trackEnds);
-  connectAllTrackEndsThatMeetCriteria(trackEnds);
-
-  /*
-  for(var j = 0; j !== 500; ++j) {
-    var end1 = randint(trackEnds.length - 1);
-    var end2 = end1 + 1 + randint(trackEnds.length - end1 - 1)
-    if(offsetEuclideanDistance(subOffset(
-          trackEnds[end1].location, trackEnds[end2].location))
-        < 100) {
-      createTrack([
-        trackEnds[end1].ends[randint(2)],
-        trackEnds[end2].ends[randint(2)],
-      ]);
-    }
+  var patternbase = Math.random();
+  var basedist = 30+randint(60);
+  if(patternbase < 0.1) {
+    createRandomTrackEnds(50 + randint(200), trackEnds);
+  } else if(patternbase < 0.2) {
+    createSquareGridTrackEnds(20, 20, arenaWidth, arenaHeight, basedist, trackEnds);
+  } else {
+    createHexGridTrackEnds(20, 20, arenaWidth, arenaHeight, basedist, trackEnds);
   }
-  */
-
-  //var m = createTrackEnd({x: 70, y: 200}, {x:1, y:0});
-  //var n = createTrackEnd({x: 250, y: 300}, {x:1, y:0});
-  //var o = createTrack([m.ends[Parity.A], n.ends[Parity.B]]);
+  var densitytype = Math.random();
+  forEachNearbyTrackEndSidePair(trackEnds, basedist*2.125, function(s1, s2, bezier) {
+    var firstLastAngleDelta = absFirstLastAngleDelta(bezier);
+    // these checks could ignore z dimension if i want to add z, probably..
+    if(firstLastAngleDelta > 3/4*Math.PI) {
+      // snobby against U-turns
+      return;
+    }
+    // radians per pixel
+    var maxCurveTightness = approximateMaxCurveTightness(bezier);
+    // These commented lines contain various options for making different pretty designs.
+    if(
+      densitytype < 0.05 ? (true) : (
+      densitytype < 0.1 ? (maxCurveTightness < Math.PI / 64) : (
+      densitytype < 0.5 ? (maxCurveTightness < Math.PI / 64 && Math.random() > 0.5) : (
+      true              ? (maxCurveTightness < Math.PI / 64 &&
+                            (maxCurveTightness < Math.PI / 128 || Math.random() > 0.5)) : (
+      (true)))))
+      ) {
+      //console.log("success!", trackEnd1.location, trackEnd2.location, bezier.length(), firstAngle, lastAngle, firstLastAngleDelta);
+      createTrack([s1, s2]);
+    }
+  });
 }
 
 (function(){
