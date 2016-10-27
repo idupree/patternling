@@ -165,8 +165,8 @@ export function createTrackEnd(l: Location, d: NormalizedOffset): TrackEnd {
     ends: null
   };
   trackEnd.ends = [
-    { id: trackWorld.autoIncrement++, trackEnd: trackEnd, tracks: [], switchPosition: null },
-    { id: trackWorld.autoIncrement++, trackEnd: trackEnd, tracks: [], switchPosition: null },
+    { id: trackWorld.autoIncrement++, trackEnd: trackEnd, tracks: {}, switchPosition: null },
+    { id: trackWorld.autoIncrement++, trackEnd: trackEnd, tracks: {}, switchPosition: null },
   ];
   trackWorld.trackEnds[trackEnd.id] = trackEnd;
   trackWorld.switches[trackEnd.ends[Parity.A].id] = trackEnd.ends[Parity.A];
@@ -179,6 +179,12 @@ export function createTrack(ends: [Switch, Switch]) {
     ends: ends
   };
   trackWorld.tracks[track.id] = track;
+  ends.forEach(function(end) {
+    end.tracks[track.id] = track;
+    if(end.switchPosition == null) {
+      end.switchPosition = track.id;
+    }
+  });
   return track;
 }
 export function trackEndIsUnused(trackEnd: TrackEnd): boolean {
