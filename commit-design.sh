@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eux
+set -eu
 _out="$PATTERNLING_OUTPUT_REPO_PATH"
 _now="$1"
 mkdir "$_out/v1/$_now"

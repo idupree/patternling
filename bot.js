@@ -15,8 +15,11 @@ process.env['PATTERNLING_OUTPUT_REPO_PATH'] = config.patternling_output_repo_pat
 nowstr = strftime.utc()('%Y-%m-%d-%H%M%S%L')
 //nowstr = strftime.utc()('%Y-%m-%d-%H%M%S%N')
 
-child_process.spawn('./generate-design.sh', [nowstr], {stdio:['ignore',1,2]}).on('close', function() {
-  child_process.spawn('./commit-design.sh', [nowstr], {stdio:['ignore',1,2]}).on('close', function() {
+
+child_process.spawn('./generate-design.sh', [nowstr], {stdio:['ignore',1,2]}).on('close', function(code) {
+  if(code !== 0) { console.log("generate-design failed"); return; }
+  child_process.spawn('./commit-design.sh', [nowstr], {stdio:['ignore',1,2]}).on('close', function(code) {
+    if(code !== 0) { console.log("commit-design failed"); return; }
     console.log(nowstr);
     T.postMediaChunked({ file_path: 'design.png' }, function (err, data, response) {
       //console.log(data);
@@ -34,7 +37,8 @@ child_process.spawn('./generate-design.sh', [nowstr], {stdio:['ignore',1,2]}).on
             console.log(data.id_str, nowstr);
             child_process.spawn('./commit-twitter-link.sh', [nowstr,
                 'https://twitter.com/patternling/status/'+data.id_str], {stdio:['ignore',1,2]}
-                ).on('close', function() {
+                ).on('close', function(code) {
+              if(code !== 0) { console.log("commit-twitter-link failed"); return; }
             });
           });
         }

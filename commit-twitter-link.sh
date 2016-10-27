@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eux
+set -eu
 _out="$PATTERNLING_OUTPUT_REPO_PATH"
 _now="$1"
 _link="$2"
