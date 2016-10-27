@@ -192,6 +192,12 @@ export function trackEndIsUnused(trackEnd: TrackEnd): boolean {
     Object.keys(trackEnd.ends[Parity.A].tracks).length === 0 &&
     Object.keys(trackEnd.ends[Parity.B].tracks).length === 0);
 }
+// half-unused
+export function trackEndIsTerminus(trackEnd: TrackEnd): boolean {
+  return (
+    (Object.keys(trackEnd.ends[Parity.A].tracks).length === 0) !==
+    (Object.keys(trackEnd.ends[Parity.B].tracks).length === 0));
+}
 export function deleteTrackEnd(trackEnd: TrackEnd) {
   console.assert(trackEndIsUnused(trackEnd));
   delete trackWorld.switches[trackEnd.ends[Parity.A].id];
@@ -342,8 +348,14 @@ export function trackEndToSvg(te: TrackEnd): Element {
   line.setAttribute("y1", loc1.y.toString());
   line.setAttribute("x2", loc2.x.toString());
   line.setAttribute("y2", loc2.y.toString());
-  line.setAttribute("stroke", "#808");
-  line.setAttribute("stroke-width", "2");
+  if(trackEndIsUnused(te) /*|| trackEndIsTerminus(te)*/) {
+    line.setAttribute("stroke", "#040");
+    line.setAttribute("stroke-width", "5");
+    line.setAttribute("stroke-opacity", "0.0");
+  } else {
+    line.setAttribute("stroke", "#808");
+    line.setAttribute("stroke-width", "2");
+  }
   return line;
 }
 export function drawWorldOnPage() {
