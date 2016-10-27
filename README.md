@@ -75,3 +75,10 @@ Third party libraries:
  - bezier.js (I wrote bezier.d.ts to integrate it better with
      typescript)
 
+## What is patternling?
+
+I made this into a twitter-bot.  It requires nodejs, npm, git,
+and typescript.  Compile using `./setup.sh`; add to `config.js`
+your twitter-bot credentials and a path to a git repo with a v1/ directory;
+run using `./bot.js` to post an image to twitter+github.
+
