@@ -288,6 +288,17 @@ export function createSVGElement(name:string): SVGElement {
 export function createSVGLine(): SVGLineElement {
   return createSVGElement('line') as SVGLineElement;
 }
+// rgb 0..1
+export function clamp(n: number, min: number, max: number): number {
+  return (n < min) ? min : ((n >= max) ? max : n);
+}
+
+export function svgrgb(r: number, g: number, b: number): string {
+  return 'rgb(' +
+    clamp(Math.floor(256 * r), 0, 255) + ',' +
+    clamp(Math.floor(256 * g), 0, 255) + ',' +
+    clamp(Math.floor(256 * b), 0, 255) + ')';
+}
 // TODO make it not look like a monorail:
 // - two curves
 // - ties
@@ -307,7 +318,7 @@ ${svgXYdString(bLoc)}
 `;
   var path = createSVGElement('path');
   path.setAttribute("d", d);
-  path.setAttribute("stroke", "#000");
+  path.setAttribute("stroke", svgrgb(0.1, 0.7, 0.4));
   path.setAttribute("stroke-width", "5");
   path.setAttribute("fill-opacity", "0.0");
   return path;
