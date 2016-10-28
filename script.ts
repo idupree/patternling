@@ -149,6 +149,9 @@ export interface TrackEnd {
   // direction of end A:
   direction: NormalizedOffset;
   ends: [Switch, Switch];
+  // For decorations diffusion stuff:
+  zappiness: number;
+  snowiness: number;
 }
 export interface Track {
   id: ID;
@@ -186,7 +189,9 @@ export function createTrackEnd(l: Location, d: NormalizedOffset): TrackEnd {
     id: trackWorld.autoIncrement++,
     location: l,
     direction: d,
-    ends: null
+    ends: null,
+    zappiness: 0,
+    snowiness: 0
   };
   trackEnd.ends = [
     { id: trackWorld.autoIncrement++, trackEnd: trackEnd, tracks: {}, switchPosition: null },
@@ -364,7 +369,9 @@ ${svgXYdString(bLoc)}
 `;
   var path = createSVGElement('path');
   path.setAttribute("d", d);
-  path.setAttribute("stroke", svgrgb(0.1, 0.7, 0.4));
+  //path.setAttribute("stroke", svgrgb(0.1, 0.7, 0.4));
+  var zappiness = (t.ends[Parity.A].trackEnd.zappiness + t.ends[Parity.B].trackEnd.zappiness)/2;
+  path.setAttribute("stroke", svgrgb(0.1, zappiness, 0.4));
   path.setAttribute("stroke-width", "5");
   path.setAttribute("fill-opacity", "0.0");
   return path;
@@ -387,7 +394,7 @@ export function trackEndToSvg(te: TrackEnd): Element {
     line.setAttribute("stroke-width", "5");
     line.setAttribute("stroke-opacity", "0.0");
   } else {
-    line.setAttribute("stroke", "#808");
+    line.setAttribute("stroke", svgrgb(te.zappiness*3, 0, te.zappiness));
     line.setAttribute("stroke-width", "2");
   }
   return line;
@@ -578,6 +585,22 @@ export function demoInit() {
       createTrack([s1, s2]);
     }
   });
+  //hmmmmmmmm.... directional zappiness?
+  //
+  trackEnds.forEach(function(end) {
+    if(Math.random() < 0.03) {
+      end.zappiness += 1;
+    }
+    if(Math.random() < 0.06) {
+      end.snowiness += 1;
+    }
+  });
+  for(var i = 0; i < 30; i++) {
+    trackEnds.forEach(function(end) {
+      end.zappiness = Math.max.apply(null, [end.zappiness].concat(
+        connectedTrackEnds(end).map((te)=>te.zappiness*0.7)));
+    });
+  }
 }
 
 (function(){
