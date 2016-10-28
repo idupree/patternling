@@ -36,6 +36,14 @@ if(is_nodejs) {
   eval(fs.readFileSync('./bezier.js', 'utf8'));
   eval(fs.readFileSync('./collections.js', 'utf8') + '\nglobal.collections = collections;\n');
 }
+// equivalent of Object.values
+// num/str versions since Typescript won't be polymorphic in key type
+function objectnum_values<V>(obj: {[id: number]: V}): V[] {
+  return Object.keys(obj).map(function(k) { return obj[k]; });
+}
+function objectstr_values<V>(obj: {[id: string]: V}): V[] {
+  return Object.keys(obj).map(function(k) { return obj[k]; });
+}
 
 namespace TrainWorldII {
 // This module currently can represent a network
@@ -213,6 +221,16 @@ export function trackEndIsTerminus(trackEnd: TrackEnd): boolean {
   return (
     (Object.keys(trackEnd.ends[Parity.A].tracks).length === 0) !==
     (Object.keys(trackEnd.ends[Parity.B].tracks).length === 0));
+}
+export function connectedTrackEnds(trackEnd: TrackEnd): TrackEnd[] {
+  return (
+    objectnum_values(trackEnd.ends[Parity.A].tracks).concat(
+    objectnum_values(trackEnd.ends[Parity.B].tracks))
+  .map(function(track){
+    return track.ends[
+      (track.ends[Parity.A].trackEnd.id === trackEnd.id) ? Parity.B : Parity.A
+      ].trackEnd;
+    }));
 }
 export function deleteTrackEnd(trackEnd: TrackEnd) {
   console.assert(trackEndIsUnused(trackEnd));
