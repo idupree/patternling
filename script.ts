@@ -11,7 +11,23 @@
 // These import statements were tried:
 //   import jsdom from "./node_modules/jsdom/lib/jsdom";
 //   import { Bezier } from "./bezier";
-declare var require: any;
+
+// Make using 'require' compile in multiple TypeScript versions (1.8 and 2.0)
+//declare var require: NodeRequire;
+//declare var require: any;
+//declare var require: {
+//    <T>(path: string): T;
+//    (paths: string[], callback: (...modules: any[]) => void): void;
+//    ensure: (paths: string[], callback: (require: <T>(path: string) => T) => void) => void;
+//};
+declare var require: {
+  (id: string): any;
+  resolve(id:string): string;
+  cache: any;
+  extensions: any;
+  main: any;
+};
+
 var is_nodejs = (typeof document === 'undefined' && typeof require !== 'undefined');
 if(is_nodejs) {
   var jsdom = require("jsdom");
