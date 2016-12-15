@@ -422,6 +422,7 @@ export function drawWorldIn(svgElem) {
   if(!svgElem) {
     return;
   }
+  var minX = 1/0, minY = 1/0, maxX = -1/0, maxY = -1/0;
   // I think this is where d3 might come in handy?
   // TODO remove any old content from the #world element
   // before adding more.
@@ -432,7 +433,17 @@ export function drawWorldIn(svgElem) {
   for(var teID of Object.keys(trackWorld.trackEnds)) {
     var trackEnd = trackWorld.trackEnds[+teID];
     svgElem.appendChild(trackEndToSvg(trackEnd));
+    if(minX > trackEnd.location.x) { minX = trackEnd.location.x; }
+    if(minY > trackEnd.location.y) { minY = trackEnd.location.y; }
+    if(maxX < trackEnd.location.x) { maxX = trackEnd.location.x; }
+    if(maxY < trackEnd.location.y) { maxY = trackEnd.location.y; }
   }
+  minX -= 5;
+  minY -= 5;
+  maxX += 5;
+  maxY += 5;
+  var width = maxX - minX, height = maxY - minY;
+  svgElem.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
 }
 
 
