@@ -9,6 +9,11 @@ Welcome, dear traveller or meddler!
 Track generation as of December 1st
 ===
 
+This generates designs that, in some abstract way, are made of train
+tracks (monorails?) that connect smoothly together.
+The paths are smooth by virtue of being Bézier curves.
+There are no actual trains currently.
+
 The code is in `script.ts`. The overview is first I
 generate some "track end-points" that consist of a location and an
 orientation, and then I connect every pair of end-point sides[1] that meet
@@ -51,10 +56,10 @@ unless this readme sentence is out of date.
 
 No.
 
-### Is there a TrainWorld I?
+### The old name of this repository was TrainWorld II. Was there a TrainWorld I?
 
 No.  There are unrelated things called TrainWorld, so the II
-is a cheesy way to give this project a more unique name.
+was a cheesy way to give this project a more unique name.
 
 ### Why do the trains move in a way that doesn't make much sense?
 
