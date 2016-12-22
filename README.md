@@ -49,7 +49,7 @@ FAQ
 
 ### I need to compile it??
 
-Yeah, you need the TypeScript tools. Run `tsc script.ts`
+Yeah, you need the TypeScript tools. Run `./setup.sh`
 unless this readme sentence is out of date.
 
 ### Is it finished?
