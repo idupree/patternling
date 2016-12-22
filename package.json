@@ -1,5 +1,5 @@
 {
-  "name": "trainworldii",
+  "name": "patternling",
   "version": "1.0.0",
   "description": "design generator",
   "main": "bezier.js",
@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/idupree/trainworldii.git"
+    "url": "git+https://github.com/idupree/patternling.git"
   },
   "author": "idupree",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/idupree/trainworldii/issues"
+    "url": "https://github.com/idupree/patternling/issues"
   },
-  "homepage": "https://github.com/idupree/trainworldii#readme",
+  "homepage": "https://github.com/idupree/patternling#readme",
   "dependencies": {
     "@types/jsdom": "^2.0.29",
     "jsdom": "^9.8.0",
